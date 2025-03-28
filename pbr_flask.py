@@ -108,6 +108,13 @@ def delete_files():
             os.remove(zip_path)
     latest_zip_filename = None  # Reset the ZIP file name
 
+    # Delete all files in the uploads folder
+    for root, _, files in os.walk(app.config['UPLOAD_FOLDER']):
+        for file in files:
+            file_path = os.path.join(root, file)
+            if os.path.exists(file_path):
+                os.remove(file_path)
+
     return jsonify({'status': 'deleted'})
 
 if __name__ == '__main__':
