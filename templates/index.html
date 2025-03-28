@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PBR Texture Generator (Flask)</title>
+</head>
+<body>
+    <h1>PBR Texture Generator</h1>
+    <form method="post" enctype="multipart/form-data">
+        <input type="file" name="files[]" multiple><br><br>
+
+        <label for="albedo">Albedo:</label>
+        <select name="albedo" id="albedo">
+            <option value="none">None</option>
+            <option value="copy" selected>Copy</option>
+        </select><br><br>
+
+        <label for="normal">Normal:</label>
+        <select name="normal" id="normal">
+            <option value="none">None</option>
+            <option value="sobel" selected>Sobel</option>
+        </select><br><br>
+
+        <label for="roughness">Roughness:</label>
+        <select name="roughness" id="roughness">
+            <option value="none">None</option>
+            <option value="gaussian" selected>Gaussian</option>
+        </select><br><br>
+
+        <label for="metallic">Metallic:</label>
+        <select name="metallic" id="metallic">
+            <option value="none">None</option>
+            <option value="hsv" selected>HSV</option>
+        </select><br><br>
+
+        <input type="submit" value="Generate Textures">
+    </form>
+
+    {% if error %}
+        <p style="color: red;">{{ error }}</p>
+    {% endif %}
+
+    {% if image_paths %}
+        <h2>Generated Textures:</h2>
+        <ul>
+            {% for i in range(image_paths|length) %}
+                <li>
+                    <p><strong>{{ image_paths[i].split('/')[-1] }}</strong></p>
+                    <p>Output Folder: {{ output_folders[i] }}</p>
+                    <a href="{{ url_for('output_file', filename=output_folders[i].split('/')[-1] + '/'+ image_paths[i].split('/')[-1].split('.')[0] + '_albedo.png' ) }}">Albedo</a>
+                    <a href="{{ url_for('output_file', filename=output_folders[i].split('/')[-1] + '/'+ image_paths[i].split('/')[-1].split('.')[0] + '_normal.png' ) }}">Normal</a>
+                    <a href="{{ url_for('output_file', filename=output_folders[i].split('/')[-1] + '/'+ image_paths[i].split('/')[-1].split('.')[0] + '_rough.png' ) }}">Roughness</a>
+                    <a href="{{ url_for('output_file', filename=output_folders[i].split('/')[-1] + '/'+ image_paths[i].split('/')[-1].split('.')[0] + '_metallic.png' ) }}">Metallic</a>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+</body>
+</html>
