@@ -1,11 +1,31 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>PBR Texture Generator (Flask)</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PBR Texture Generator</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        #progress-container {
+            display: none;
+            margin-top: 20px;
+        }
+        #progress-bar {
+            width: 0;
+            height: 20px;
+            background-color: green;
+            text-align: center;
+            color: white;
+        }
+        #download-container {
+            display: none;
+            margin-top: 20px;
+        }
+    </style>
 </head>
 <body>
     <h1>PBR Texture Generator</h1>
-    <form method="post" enctype="multipart/form-data">
+    <form id="upload-form" method="POST" enctype="multipart/form-data">
         <input type="file" name="files[]" multiple><br><br>
 
         <label for="albedo">Albedo:</label>
@@ -35,24 +55,63 @@
         <input type="submit" value="Generate Textures">
     </form>
 
-    {% if error %}
-        <p style="color: red;">{{ error }}</p>
-    {% endif %}
+    <div id="progress-container">
+        <div id="progress-bar">0%</div>
+    </div>
 
-    {% if image_paths %}
-        <h2>Generated Textures:</h2>
-        <ul>
-            {% for i in range(image_paths|length) %}
-                <li>
-                    <p><strong>{{ image_paths[i].split('/')[-1] }}</strong></p>
-                    <p>Output Folder: {{ output_folders[i] }}</p>
-                    <a href="{{ url_for('output_file', filename=output_folders[i].split('/')[-1] + '/'+ image_paths[i].split('/')[-1].split('.')[0] + '_albedo.png' ) }}">Albedo</a>
-                    <a href="{{ url_for('output_file', filename=output_folders[i].split('/')[-1] + '/'+ image_paths[i].split('/')[-1].split('.')[0] + '_normal.png' ) }}">Normal</a>
-                    <a href="{{ url_for('output_file', filename=output_folders[i].split('/')[-1] + '/'+ image_paths[i].split('/')[-1].split('.')[0] + '_rough.png' ) }}">Roughness</a>
-                    <a href="{{ url_for('output_file', filename=output_folders[i].split('/')[-1] + '/'+ image_paths[i].split('/')[-1].split('.')[0] + '_metallic.png' ) }}">Metallic</a>
-                </li>
-            {% endfor %}
-        </ul>
-    {% endif %}
+    <div id="download-container">
+        <button id="download-zip">Download Latest Textures</button>
+        <button id="delete-files">Delete Files</button>
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            $('#upload-form').on('submit', function (e) {
+                e.preventDefault();
+                $('#progress-container').show();
+                $('#progress-bar').css('width', '0%').text('0%');
+                $('#download-container').hide();
+
+                const formData = new FormData(this);
+                $.ajax({
+                    url: '/',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function () {
+                        checkProgress();
+                    }
+                });
+            });
+
+            function checkProgress() {
+                const interval = setInterval(function () {
+                    $.get('/progress', function (data) {
+                        const progress = data.progress;
+                        $('#progress-bar').css('width', progress + '%').text(progress + '%');
+                        if (progress === 100) {
+                            clearInterval(interval);
+                            $('#download-container').show();
+                        }
+                    });
+                }, 500);
+            }
+
+            $('#download-zip').on('click', function () {
+                window.location.href = '/download_zip';
+            });
+
+            $('#delete-files').on('click', function () {
+                $.post('/delete_files', function (data) {
+                    if (data.status === 'deleted') {
+                        alert('Files deleted successfully!');
+                        $('#download-container').hide();
+                        $('#progress-container').hide();
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html>
