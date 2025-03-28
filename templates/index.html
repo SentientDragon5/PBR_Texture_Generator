@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PBR Texture Generator</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         #progress-container {
             display: none;
@@ -19,6 +20,11 @@
         }
         #download-container {
             display: none;
+            margin-top: 20px;
+        }
+        #viewer-container {
+            width: 100%;
+            height: 400px;
             margin-top: 20px;
         }
     </style>
@@ -64,6 +70,8 @@
         <button id="delete-files">Delete Files</button>
     </div>
 
+    <div id="viewer-container"></div>
+
     <script>
         $(document).ready(function () {
             $('#upload-form').on('submit', function (e) {
@@ -71,6 +79,7 @@
                 $('#progress-container').show();
                 $('#progress-bar').css('width', '0%').text('0%');
                 $('#download-container').hide();
+                $('#viewer-container').hide(); // Hide the viewer initially
 
                 const formData = new FormData(this);
                 $.ajax({
@@ -79,13 +88,13 @@
                     data: formData,
                     processData: false,
                     contentType: false,
-                    success: function () {
-                        checkProgress();
+                    success: function (response) {
+                        checkProgress(response.textures);
                     }
                 });
             });
 
-            function checkProgress() {
+            function checkProgress(texturePaths) {
                 const interval = setInterval(function () {
                     $.get('/progress', function (data) {
                         const progress = data.progress;
@@ -93,6 +102,7 @@
                         if (progress === 100) {
                             clearInterval(interval);
                             $('#download-container').show();
+                            loadTextures(texturePaths);
                         }
                     });
                 }, 500);
@@ -108,9 +118,56 @@
                         alert('Files deleted successfully!');
                         $('#download-container').hide();
                         $('#progress-container').hide();
+                        $('#viewer-container').empty(); // Clear the viewer
                     }
                 });
             });
+
+            function loadTextures(texturePaths) {
+                // Show the viewer
+                $('#viewer-container').show();
+
+                // Initialize Three.js
+                const container = document.getElementById('viewer-container');
+                const scene = new THREE.Scene();
+                const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+                const renderer = new THREE.WebGLRenderer();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+                container.appendChild(renderer.domElement);
+
+                // Add a plane geometry
+                const geometry = new THREE.PlaneGeometry(5, 5);
+                const loader = new THREE.TextureLoader();
+
+                // Load textures dynamically
+                const material = new THREE.MeshStandardMaterial({
+                    map: loader.load(texturePaths.albedo),
+                    normalMap: loader.load(texturePaths.normal),
+                    roughnessMap: loader.load(texturePaths.roughness),
+                    metalnessMap: loader.load(texturePaths.metallic),
+                    roughness: 1.0,
+                    metalness: 1.0,
+                });
+
+                const plane = new THREE.Mesh(geometry, material);
+                plane.rotation.x = -Math.PI / 4; // Tilt the quad
+                scene.add(plane);
+
+                // Add a light source
+                const light = new THREE.DirectionalLight(0xffffff, 1);
+                light.position.set(5, 5, 5);
+                scene.add(light);
+
+                // Position the camera
+                camera.position.z = 10;
+
+                // Render the scene
+                function animate() {
+                    requestAnimationFrame(animate);
+                    renderer.render(scene, camera);
+                }
+                animate();
+            }
         });
     </script>
 </body>

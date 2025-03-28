@@ -43,6 +43,7 @@ def index():
 
         progress = 0  # Reset progress
         total_files = len(files)
+        texture_paths = {}  # Dictionary to store texture paths
 
         for idx, file in enumerate(files):
             if file and allowed_file(file.filename):
@@ -58,17 +59,23 @@ def index():
                 latest_generated_folders.append(output_folder)  # Track the generated folder
                 progress = int(((idx + 1) / total_files) * 100)  # Update progress
 
+                # Store texture paths
+                texture_paths = {
+                    'albedo': f"{output_folder}/{os.path.splitext(filename)[0]}_albedo.png",
+                    'normal': f"{output_folder}/{os.path.splitext(filename)[0]}_normal.png",
+                    'roughness': f"{output_folder}/{os.path.splitext(filename)[0]}_roughness.png",
+                    'metallic': f"{output_folder}/{os.path.splitext(filename)[0]}_metallic.png",
+                }
+
         # Create a ZIP file of the latest generated folders
         if len(latest_generated_folders) == 1:
-            # Use the name of the first uploaded file for the ZIP file
             base_name = os.path.basename(latest_generated_folders[0])
             latest_zip_filename = f"{base_name}.zip"
         else:
-            # Use a generic name if multiple files are uploaded
             latest_zip_filename = "latest_generated_textures.zip"
 
         zip_path = os.path.join(app.config['ZIP_FOLDER'], latest_zip_filename)
-        with zipfile.ZipFile(zip_path, 'w') as zipf:  # Use zipfile.ZipFile here
+        with zipfile.ZipFile(zip_path, 'w') as zipf:
             for folder in latest_generated_folders:
                 for root, _, files in os.walk(folder):
                     for file in files:
@@ -76,7 +83,7 @@ def index():
                         arcname = os.path.relpath(file_path, app.config['OUTPUT_FOLDER'])
                         zipf.write(file_path, arcname)
 
-        return jsonify({'status': 'completed', 'zip_path': latest_zip_filename})
+        return jsonify({'status': 'completed', 'zip_path': latest_zip_filename, 'textures': texture_paths})
 
     return render_template('index.html')
 
